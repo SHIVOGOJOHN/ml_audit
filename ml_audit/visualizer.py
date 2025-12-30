@@ -1,0 +1,378 @@
+import os
+import json
+
+HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Trial Visualization</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-color: #58a6ff;
+            --success-color: #238636;
+            --warning-color: #d29922;
+            --danger-color: #da3633;
+            --purple-color: #a371f7;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .meta-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .meta-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: -30px;
+            top: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            border: 4px solid var(--bg-color);
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        /* Operation specific marker colors */
+        .op-load_data .timeline-marker { background: var(--success-color); box-shadow: 0 0 0 2px var(--success-color); }
+        .op-filter_rows .timeline-marker { background: var(--warning-color); box-shadow: 0 0 0 2px var(--warning-color); }
+        .op-normalize .timeline-marker, .op-scale .timeline-marker { background: var(--purple-color); box-shadow: 0 0 0 2px var(--purple-color); }
+        .op-impute_mean .timeline-marker, .op-impute .timeline-marker { background: #3fb950; box-shadow: 0 0 0 2px #3fb950; }
+        .op-balance .timeline-marker { background: #f78166; box-shadow: 0 0 0 2px #f78166; }
+        .op-generic_pandas .timeline-marker { background: #8b949e; box-shadow: 0 0 0 2px #8b949e; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            border-color: var(--accent-color);
+        }
+
+        .card-header {
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .op-title {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: var(--accent-color);
+        }
+
+        .card-body {
+            padding: 15px;
+            font-size: 0.95rem;
+        }
+
+        .property-row {
+            display: flex;
+            margin-bottom: 8px;
+            align-items: flex-start;
+        }
+        
+        .property-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .prop-key {
+            min-width: 100px;
+            color: var(--text-secondary);
+        }
+
+        .prop-value {
+            color: var(--text-primary);
+            flex: 1;
+            word-break: break-all;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1 id="exp-name">Experiment Audit</h1>
+            <div class="meta-grid">
+                <div class="meta-card">
+                    <div class="meta-label">Created</div>
+                    <div class="meta-value" id="exp-created"></div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-label">Final Shape</div>
+                    <div class="meta-value" id="exp-shape"></div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-label">Columns</div>
+                    <div class="meta-value" id="exp-columns-count"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="timeline" id="timeline">
+            <!-- Timeline items will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        const auditData = REPLACE_WITH_JSON_DATA;
+
+        // Render Header
+        if (auditData.experiment) {
+             document.getElementById('exp-name').textContent = auditData.experiment.replace(/_/g, ' ').toUpperCase();
+        } else {
+             document.getElementById('exp-name').textContent = 'Unknown Experiment';
+        }
+       
+        if (auditData.created) document.getElementById('exp-created').textContent = new Date(auditData.created).toLocaleString();
+        
+        if (auditData.final_shape) document.getElementById('exp-shape').textContent = `(${auditData.final_shape.join(' × ')})`;
+        if (auditData.final_columns) document.getElementById('exp-columns-count').textContent = auditData.final_columns.length;
+
+        // Render Timeline
+        const timeline = document.getElementById('timeline');
+        
+        if (auditData.operations && Array.isArray(auditData.operations)) {
+            auditData.operations.forEach((op, index) => {
+                const item = document.createElement('div');
+                item.className = `timeline-item op-${op.op}`;
+                item.style.animationDelay = `${index * 0.1}s`;
+
+                let detailsHtml = '';
+
+                // Helper for lists
+                const renderList = (v) => Array.isArray(v) ? v.map(c => `<span class="tag">${c}</span>`).join('') : v;
+
+                // Pattern match op type
+                if (op.op === 'load_data') {
+                detailsHtml = `
+                    <div class="property-row"><span class="prop-key">Initial Shape:</span><span class="prop-value">${op.shape ? op.shape.join(' × ') : 'N/A'}</span></div>
+                    <div class="property-row"><span class="prop-key">Columns:</span><div class="prop-value">${op.columns ? renderList(op.columns) : ''}</div></div>
+                `;
+
+                } else if (op.op === 'drop_columns') {
+                detailsHtml = `
+                    <div class="property-row"><span class="prop-key">Columns:</span><div class="prop-value">${op.columns ? renderList(op.columns) : ''}</div></div>
+                `;
+                
+                } else if (op.op === 'filter_rows') {
+                    detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Condition:</span><span class="prop-value" style="color: var(--warning-color); font-weight: bold;">${op.column} ${op.operator} ${op.value}</span></div>
+                    `;
+                } else if (op.op === 'impute' || op.op === 'impute_mean') {
+                    detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Column:</span><span class="prop-value">${renderList(op.column)}</span></div>
+                        <div class="property-row"><span class="prop-key">Strategy:</span><span class="prop-value">${op.strategy || 'mean'}</span></div>
+                        ${op.method ? `<div class="property-row"><span class="prop-key">Method:</span><span class="prop-value">${op.method}</span></div>` : ''}
+                    `;
+                } else if (op.op === 'scale' || op.op === 'normalize') {
+                    detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Columns:</span><div class="prop-value">${renderList(op.column)}</div></div>
+                        <div class="property-row"><span class="prop-key">Method:</span><span class="prop-value">${op.method || op.normalizer}</span></div>
+                    `;
+                } else if (op.op === 'encode' || op.op === 'one_hot_encode') {
+                    detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Column:</span><span class="prop-value">${renderList(op.column)}</span></div>
+                        <div class="property-row"><span class="prop-key">Method:</span><span class="prop-value">${op.method || 'onehot'}</span></div>
+                        ${op.target ? `<div class="property-row"><span class="prop-key">Target:</span><span class="prop-value">${op.target}</span></div>` : ''}
+                    `;
+                } else if (op.op === 'transform') {
+                    detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Column:</span><span class="prop-value">${renderList(op.column)}</span></div>
+                        <div class="property-row"><span class="prop-key">Func:</span><span class="prop-value">${op.func}</span></div>
+                    `;
+                } else if (op.op === 'discretize') {
+                     detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Column:</span><span class="prop-value">${renderList(op.column)}</span></div>
+                        <div class="property-row"><span class="prop-key">Bins:</span><span class="prop-value">${op.bins} (${op.strategy})</span></div>
+                    `;
+                } else if (op.op === 'date_extract') {
+                     detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Column:</span><span class="prop-value">${renderList(op.column)}</span></div>
+                        <div class="property-row"><span class="prop-key">Features:</span><div class="prop-value">${renderList(op.features)}</div></div>
+                    `;
+                } else if (op.op === 'balance') {
+                     detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Target:</span><span class="prop-value">${op.target}</span></div>
+                        <div class="property-row"><span class="prop-key">Strategy:</span><span class="prop-value" style="font-weight:bold; color: var(--danger-color)">${op.strategy.toUpperCase()}</span></div>
+                    `;
+                } else if (op.op === 'generic_pandas') {
+                      detailsHtml = `
+                        <div class="property-row"><span class="prop-key">Method:</span><span class="prop-value">${op.method}()</span></div>
+                        <div class="property-row"><span class="prop-key">Args:</span><span class="prop-value" style="font-family:monospace; font-size:0.8em">${JSON.stringify(op.kwargs)}</span></div>
+                    `;
+                } else {
+                     // Default for unknown ops
+                     detailsHtml = `<div class="property-row"><span class="prop-key">Raw:</span><span class="prop-value"><pre>${JSON.stringify(op, null, 2)}</pre></span></div>`;
+                }
+
+                item.innerHTML = `
+                    <div class="timeline-marker"></div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="op-title">${op.op}</span>
+                            <span style="color: var(--text-secondary); font-size: 0.8em">Step ${index + 1}</span>
+                        </div>
+                        <div class="card-body">
+                            ${detailsHtml}
+                        </div>
+                    </div>
+                `;
+                timeline.appendChild(item);
+            });
+        }
+
+    </script>
+</body>
+</html>
+"""
+
+def generate_visualization(json_path, output_path=None):
+    """
+    Generates an HTML visualization from a JSON audit trail.
+    """
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # Simple validation
+        if 'operations' not in data:
+            print(f"Skipping visualization for {json_path}: 'operations' key missing.")
+            return
+
+        # Create HTML content
+        json_str = json.dumps(data, indent=2)
+        html_content = HTML_TEMPLATE.replace('REPLACE_WITH_JSON_DATA', json_str)
+        
+        # Determine output path
+        if output_path is None:
+            output_path = json_path.replace('.json', '.html')
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+            
+        print(f"Visualization created: {output_path}")
+        return output_path
+        
+    except Exception as e:
+        print(f"Error generating visualization for {json_path}: {e}")
+        return None

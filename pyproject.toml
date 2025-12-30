@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ml-audit"
+version = "0.1.0"
+authors = [
+  { name="ML Audit Team", email="maintainer@example.com" },
+]
+description = "A lightweight library for tracking, auditing, and visualizing machine learning preprocessing steps."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pandas>=1.0.0",
+    "numpy>=1.18.0",
+    "scikit-learn>=0.24.0",
+]
+
+[project.optional-dependencies]
+balance = ["imbalanced-learn>=0.8.0"]
+
+[project.urls]
+"Homepage" = "https://github.com/SHIVOGOJOHN/ml_audit"
+"Bug Tracker" = "https://github.com/SHIVOGOJOHN/ml_audit/issues"

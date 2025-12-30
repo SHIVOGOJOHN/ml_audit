@@ -1,0 +1,73 @@
+{
+  "experiment": "house_price_data_analysis",
+  "created": "2025-12-22T00:47:30.401668",
+  "operations": [
+    {
+      "op": "load_data",
+      "shape": [
+        1000,
+        5
+      ],
+      "columns": [
+        "age",
+        "size",
+        "price",
+        "category",
+        "bought_house"
+      ],
+      "dtypes": {
+        "age": "float64",
+        "size": "float64",
+        "price": "float64",
+        "category": "object",
+        "bought_house": "int32"
+      }
+    },
+    {
+      "op": "filter_rows",
+      "column": "age",
+      "operator": ">=",
+      "value": 21
+    },
+    {
+      "op": "impute_mean",
+      "column": "price",
+      "mean_value": 54786.54282407407
+    },
+    {
+      "op": "impute_mean",
+      "column": "size",
+      "mean_value": 5595.867848997642
+    },
+    {
+      "op": "normalize",
+      "column": [
+        "price"
+      ],
+      "normalizer": "StandardScaler"
+    },
+    {
+      "op": "one_hot_encode",
+      "column": "category",
+      "categories": [
+        "category_A",
+        "category_B",
+        "category_C"
+      ]
+    }
+  ],
+  "final_hash": "b766b95f65a7ed1eef96d0d1d05f1a67f56b9d2c38192920fc60307a99c286e2",
+  "final_shape": [
+    961,
+    7
+  ],
+  "final_columns": [
+    "age",
+    "size",
+    "price",
+    "bought_house",
+    "category_A",
+    "category_B",
+    "category_C"
+  ]
+}
