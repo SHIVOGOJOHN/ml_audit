@@ -1,5 +1,9 @@
 # ML Audit
 
+<div align="center">
+  <img src="/static/ml_audit_logo.png" alt="ML Audit Logo" width="120" />
+</div>
+
 > **Solves Data Lineage Blindness by tracking granular preprocessing steps.**
 
 `ml-audit` is a lightweight Python library designed to bring transparency and reproducibility to data preprocessing. Unlike standard experiment trackers that treat preprocessing as a black box, this library records every granular transformation applied to your pandas DataFrame.
