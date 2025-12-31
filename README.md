@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="/ml_audit/ml_audit_favicon.png" alt="ML Audit Logo" width="20" style="vertical-align: middle"> ML Audit
+  <img src="/ml_audit/ml_audit_favicon.png" alt="ML Audit Logo" width="30" style="vertical-align: middle"> ML Audit
 </h1>
 
 > **Solves Data Lineage Blindness by tracking granular preprocessing steps.**
