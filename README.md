@@ -2,7 +2,7 @@
   <img src="/ml_audit/ml_audit_favicon.png" alt="ML Audit Logo" width="50" />
 </div>
 
-                                 # ML Audit
+# ML Audit
 
 > **Solves Data Lineage Blindness by tracking granular preprocessing steps.**
 
